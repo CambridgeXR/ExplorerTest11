@@ -1,23 +1,42 @@
-const CACHE_NAME = 'vr-explorer-v1';
-const OFFLINE_URLS = [
-  '/',
-  '/index.html',
-  '/manifest.json'
+// Service Worker for ExplorerTest11 PWA
+
+const CACHE_NAME = 'vr-explorer-cache-v11';
+const urlsToCache = [
+  '/ExplorerTest11/',
+  '/ExplorerTest11/index.html',
+  '/ExplorerTest11/manifest.json',
+  '/ExplorerTest11/icons/icon-192.png',
+  '/ExplorerTest11/icons/icon-512.png'
 ];
 
+// Install event: cache essential files
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(OFFLINE_URLS))
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
   );
 });
 
-self.addEventListener('activate', event => {
-  event.waitUntil(self.clients.claim());
+// Fetch event: respond with cached file if available
+self.addEventListener('fetch', event => {
+  event.respondWith(
+    caches.match(event.request)
+      .then(response => response || fetch(event.request))
+  );
 });
 
-self.addEventListener('fetch', event => {
-  // Network-first strategy:
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+// Activate event: clean up old caches
+self.addEventListener('activate', event => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then(cacheNames =>
+      Promise.all(
+        cacheNames.map(cacheName => {
+          if (!cacheWhitelist.includes(cacheName)) {
+            return caches.delete(cacheName);
+          }
+        })
+      )
+    )
   );
 });
